@@ -1,3 +1,6 @@
+import { BrokerInstance } from "./../broker/brokerTypes";
+import { BrokerFactory } from "./../broker/brokerFactory";
+import { BaseBrokerConfigOptions } from "./../broker/BaseBrokerConfigOptions";
 import { InvalidFileExtensionError } from "./../error/ConfigurationError/InvalidFileExtensionError";
 import { InvalidConfigurationUrlError } from "../error/ConfigurationError/InvalidConfigurationUrlError";
 import { ConfigurationParser } from "./ConfigurationParser";
@@ -8,6 +11,7 @@ export class Configuration {
   static instance: Configuration;
 
   configurationOptions: ConfigurationOptions;
+  broker: BrokerInstance;
 
   static async loadConfiguration(
     filePath: string
@@ -28,6 +32,7 @@ export class Configuration {
 
   private constructor(configurationOptions: ConfigurationOptions) {
     this.configurationOptions = configurationOptions;
+    this.broker = BrokerFactory.create(this.brokerConfig().brokerType, this);
     //initialise Logger
     //initialize Message Broker
     return this;
@@ -38,5 +43,13 @@ export class Configuration {
       return new MissingLoadConfiguration();
     }
     return Configuration.instance;
+  }
+
+  clientId(): string {
+    return this.configurationOptions.clientId;
+  }
+
+  brokerConfig(): BaseBrokerConfigOptions {
+    return this.configurationOptions.brokerConfig;
   }
 }

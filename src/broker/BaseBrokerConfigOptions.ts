@@ -1,5 +1,3 @@
-import { registerEnumType } from "type-graphql";
-
 export enum allowedMessageBrokers {
   KAFKA = "kafka",
 }
