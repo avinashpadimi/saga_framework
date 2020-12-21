@@ -1,4 +1,4 @@
-import { BrokerInstance } from "./brokerTypes";
+import { BrokerInstance } from "./types/BrokerTypes";
 import { Configuration } from "../config/Configuration";
 import { KafkaBroker } from "./kafka/broker";
 import { allowedMessageBrokers } from "./BaseBrokerConfigOptions";

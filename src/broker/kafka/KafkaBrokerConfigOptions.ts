@@ -5,4 +5,5 @@ import {
 
 export interface KafkaBrokerConfigOptions extends BaseBrokerConfigOptions {
   brokerType: allowedMessageBrokers.KAFKA;
+  groupId: string;
 }

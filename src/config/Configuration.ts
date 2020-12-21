@@ -1,4 +1,4 @@
-import { BrokerInstance } from "./../broker/brokerTypes";
+import { BrokerInstance } from "../broker/types/BrokerTypes";
 import { BrokerFactory } from "./../broker/brokerFactory";
 import { BaseBrokerConfigOptions } from "./../broker/BaseBrokerConfigOptions";
 import { InvalidFileExtensionError } from "./../error/ConfigurationError/InvalidFileExtensionError";
@@ -6,6 +6,7 @@ import { InvalidConfigurationUrlError } from "../error/ConfigurationError/Invali
 import { ConfigurationParser } from "./ConfigurationParser";
 import { ConfigurationOptions } from "./ConfigurationOptions";
 import { MissingLoadConfiguration } from "../error/ConfigurationError/missingLoadConfiguration";
+import { timeStamp } from "console";
 
 export class Configuration {
   static instance: Configuration;
@@ -13,34 +14,37 @@ export class Configuration {
   configurationOptions: ConfigurationOptions;
   broker: BrokerInstance;
 
-  static async loadConfiguration(
-    filePath: string
-  ): Promise<Configuration | Error> {
+  static async loadConfiguration(filePath: string): Promise<Configuration> {
     if (filePath === undefined) {
-      return new InvalidConfigurationUrlError(filePath);
+      throw new InvalidConfigurationUrlError(filePath);
     }
 
     const options: ConfigurationOptions = await ConfigurationParser.read(
       filePath
     );
 
-    if (!options) return new InvalidFileExtensionError(filePath);
+    if (!options) throw new InvalidFileExtensionError(filePath);
 
-    Configuration.instance = new Configuration(options);
-    return Configuration.instance;
+    try {
+      Configuration.instance = new Configuration(options);
+      await Configuration.instance.startBrokerComponents();
+      return Configuration.instance;
+    } catch (error) {
+      console.log(error);
+      return error;
+    }
   }
 
   private constructor(configurationOptions: ConfigurationOptions) {
     this.configurationOptions = configurationOptions;
-    this.broker = BrokerFactory.create(this.brokerConfig().brokerType, this);
+    this.initializeBroker();
     //initialise Logger
-    //initialize Message Broker
     return this;
   }
 
-  static getInstance(): Configuration | MissingLoadConfiguration {
+  static getInstance(): Configuration {
     if (!Configuration.instance) {
-      return new MissingLoadConfiguration();
+      throw new MissingLoadConfiguration();
     }
     return Configuration.instance;
   }
@@ -51,5 +55,14 @@ export class Configuration {
 
   brokerConfig(): BaseBrokerConfigOptions {
     return this.configurationOptions.brokerConfig;
+  }
+
+  initializeBroker() {
+    this.broker = BrokerFactory.create(this.brokerConfig().brokerType, this);
+    this.broker.initializeBrokerComponents();
+  }
+
+  async startBrokerComponents() {
+    this.broker.startBrokerComponents();
   }
 }

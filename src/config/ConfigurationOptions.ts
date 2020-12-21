@@ -8,16 +8,16 @@ export interface ConfigurationOptions {
   brokerConfig: BrokerConfigOptions;
 
   // Channels to which this application can push messages
-  publisherChannels: Object;
+  publisherChannels: [];
 
   // Channels to which this application can subscribe.
-  subscriberChannels: Object;
+  subscriberChannels: [];
 
   // Channels to which we push messages for retry.
-  retryChannels: Object;
+  retryChannels: [];
 
   // Channels to which we pushed failed messages for tracking.
-  failureChannels: Object;
+  failureChannels: [];
 
   // Logger Configuration
   loggerConfig: Object;

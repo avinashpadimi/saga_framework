@@ -1,0 +1,5 @@
+export enum ProducerEvents {
+  CONNECT = "CONNECT",
+  DISCONNECT = "DISCONNECT",
+  MESSAGE_PUSHED = "MESSAGE_PUSHED",
+}
