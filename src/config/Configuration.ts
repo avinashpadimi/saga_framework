@@ -1,3 +1,8 @@
+import { LoggerOptions } from "./../logger/LoggerOptions";
+import {
+  LoggerFactory,
+  LoggerInstance as Logger,
+} from "./../logger/LoggerFactory";
 import { BrokerInstance } from "../broker/types/BrokerTypes";
 import { BrokerFactory } from "./../broker/brokerFactory";
 import { BaseBrokerConfigOptions } from "./../broker/BaseBrokerConfigOptions";
@@ -10,11 +15,14 @@ import { timeStamp } from "console";
 
 export class Configuration {
   static instance: Configuration;
-
   configurationOptions: ConfigurationOptions;
   broker: BrokerInstance;
+  logger: Logger;
 
-  static async loadConfiguration(filePath: string): Promise<Configuration> {
+  static async loadConfiguration(
+    filePath: string,
+    logOptions: LoggerOptions
+  ): Promise<Configuration> {
     if (filePath === undefined) {
       throw new InvalidConfigurationUrlError(filePath);
     }
@@ -26,7 +34,7 @@ export class Configuration {
     if (!options) throw new InvalidFileExtensionError(filePath);
 
     try {
-      Configuration.instance = new Configuration(options);
+      Configuration.instance = new Configuration(options, logOptions);
       await Configuration.instance.startBrokerComponents();
       return Configuration.instance;
     } catch (error) {
@@ -35,10 +43,13 @@ export class Configuration {
     }
   }
 
-  private constructor(configurationOptions: ConfigurationOptions) {
+  private constructor(
+    configurationOptions: ConfigurationOptions,
+    logOptions: LoggerOptions
+  ) {
     this.configurationOptions = configurationOptions;
     this.initializeBroker();
-    //initialise Logger
+    this.initializeLogger(logOptions);
     return this;
   }
 
@@ -64,5 +75,9 @@ export class Configuration {
 
   async startBrokerComponents() {
     this.broker.startBrokerComponents();
+  }
+
+  initializeLogger(logOptions: LoggerOptions) {
+    this.logger = LoggerFactory.create(logOptions.type, logOptions);
   }
 }

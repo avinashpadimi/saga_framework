@@ -1,3 +1,4 @@
+import { LoggerOptions } from "./../logger/LoggerOptions";
 import { BrokerConfigOptions } from "./../broker/BrokerConfigOptions";
 
 export interface ConfigurationOptions {
@@ -20,5 +21,5 @@ export interface ConfigurationOptions {
   failureChannels: [];
 
   // Logger Configuration
-  loggerConfig: Object;
+  loggerConfig: LoggerOptions;
 }
