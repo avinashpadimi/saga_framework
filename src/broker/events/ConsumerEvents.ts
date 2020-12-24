@@ -1,0 +1,5 @@
+export enum ConsumerEvents {
+  CONNECT = "CONNECT",
+  DISCONNECT = "DISCONNECT",
+  MESSAGE_RECEIVED = "MESSAGE_RECEIVED",
+}
