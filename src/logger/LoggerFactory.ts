@@ -13,8 +13,6 @@ export class LoggerFactory {
         return new FileLogger(type, logOptions);
       case LoggerTypes.CONSOLE:
         return new ConsoleLogger(type, logOptions);
-      case LoggerTypes.CUSTOMLOGGER:
-        return;
       default:
         throw new InvalidLoggerTypeError(type);
     }

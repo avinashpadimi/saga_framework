@@ -2,20 +2,22 @@ import { EventEmitter } from "events";
 import { LoggerType } from "./enums/LoggerTypes";
 import { LoggerOptions } from "./LoggerOptions";
 import { LoggerLevel, LogLevel } from "./enums/LogLevel";
+import { Logger as ExternalLogger } from "../utils/logger";
 
 export abstract class Logger {
-  LOGGERCALLBACK = "LOGGERCALLBACK";
-  WRITE = "WRITE";
+  protected LOGGERCALLBACK = "LOGGERCALLBACK";
+  protected WRITE = "WRITE";
 
   type: LoggerType;
-  logLevel: LoggerLevel;
-  logOptions: LoggerOptions;
-  eventEmitter: EventEmitter;
+  private logOptions: LoggerOptions;
+  private eventEmitter: EventEmitter;
+  protected extLogger: ExternalLogger;
 
   constructor(type: LoggerType, logOptions: LoggerOptions) {
     this.type = type;
     this.logOptions = logOptions;
-    this.logLevel = logOptions.logLevel;
+    this.eventEmitter = new EventEmitter();
+    this.initializeLoggerComponent();
     this.registerEvents(logOptions);
   }
 
@@ -43,24 +45,31 @@ export abstract class Logger {
     this.eventEmitter.on(this.WRITE, this.printOutput);
   }
 
-  private triggerCallbackEvents(logLevel: LogLevel, msg: string) {
-    this.eventEmitter.emit(this.WRITE, logLevel, msg);
-    this.eventEmitter.emit(this.LOGGERCALLBACK, logLevel, msg);
+  private triggerCallbackEvents(
+    instance: Logger,
+    logLevel: LogLevel,
+    msg: string
+  ) {
+    this.eventEmitter.emit(this.WRITE, instance, logLevel, msg);
+    this.eventEmitter.emit(this.LOGGERCALLBACK, instance, logLevel, msg);
   }
 
-  abstract printOutput(logLevel: LogLevel, msg: string);
+  protected abstract printOutput(
+    instance: Logger,
+    logLevel: LogLevel,
+    msg: string
+  ): void;
 
   private log(logLevel: LoggerLevel, message: string) {
-    if (this.isValidLogLevel(logLevel)) return;
     const msg: string = this.formatLog(logLevel, message);
-    this.triggerCallbackEvents(logLevel, msg);
+    this.triggerCallbackEvents(this, logLevel, msg);
   }
 
-  private isValidLogLevel(logLevel: LoggerLevel): boolean {
-    return logLevel !== this.logLevel;
-  }
-
-  formatLog(logLevel: LoggerLevel, message: string): string {
+  protected formatLog(logLevel: LoggerLevel, message: string): string {
     return message;
+  }
+
+  private initializeLoggerComponent() {
+    this.extLogger = ExternalLogger.getInstance(this.logOptions);
   }
 }

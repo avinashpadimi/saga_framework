@@ -1,9 +1,9 @@
 export enum LogLevel {
-  WARN = "WARN",
-  INFO = "INFO",
-  TRACE = "TRACE",
-  ERROR = "ERROR",
-  DEBUG = "DEBUG",
+  WARN = "warn",
+  INFO = "info",
+  TRACE = "trace",
+  ERROR = "error",
+  DEBUG = "debug",
 }
 
 export type LoggerLevel =

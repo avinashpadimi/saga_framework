@@ -11,7 +11,6 @@ import { InvalidConfigurationUrlError } from "../error/ConfigurationError/Invali
 import { ConfigurationParser } from "./ConfigurationParser";
 import { ConfigurationOptions } from "./ConfigurationOptions";
 import { MissingLoadConfiguration } from "../error/ConfigurationError/missingLoadConfiguration";
-import { timeStamp } from "console";
 
 export class Configuration {
   static instance: Configuration;
@@ -35,7 +34,7 @@ export class Configuration {
 
     try {
       Configuration.instance = new Configuration(options, logOptions);
-      await Configuration.instance.startBrokerComponents();
+      await Configuration.instance.initializeComponents(logOptions);
       return Configuration.instance;
     } catch (error) {
       console.log(error);
@@ -48,9 +47,7 @@ export class Configuration {
     logOptions: LoggerOptions
   ) {
     this.configurationOptions = configurationOptions;
-    this.initializeBroker();
-    this.initializeLogger(logOptions);
-    return this;
+    this.configurationOptions.loggerConfig = logOptions;
   }
 
   static getInstance(): Configuration {
@@ -68,16 +65,25 @@ export class Configuration {
     return this.configurationOptions.brokerConfig;
   }
 
-  initializeBroker() {
+  loggerConfig(): LoggerOptions {
+    return this.configurationOptions.loggerConfig;
+  }
+
+  private async initializeComponents(logOptions: LoggerOptions) {
+    this.initializeLogger(logOptions);
+    this.initializeBroker();
+    await this.startBrokerComponents();
+  }
+  private initializeBroker() {
     this.broker = BrokerFactory.create(this.brokerConfig().brokerType, this);
     this.broker.initializeBrokerComponents();
   }
 
-  async startBrokerComponents() {
-    this.broker.startBrokerComponents();
+  private initializeLogger(logOptions: LoggerOptions) {
+    this.logger = LoggerFactory.create(logOptions.type, logOptions);
   }
 
-  initializeLogger(logOptions: LoggerOptions) {
-    this.logger = LoggerFactory.create(logOptions.type, logOptions);
+  private async startBrokerComponents() {
+    this.broker.startBrokerComponents();
   }
 }
