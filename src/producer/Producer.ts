@@ -23,7 +23,7 @@ export class Producer {
   }
 
   // Define the type of object we send (more detailed).
-  publish(options: ProducerMessageStruct) {
+  async publish(options: ProducerMessageStruct) {
     this.getBroker().sendMessage(options);
   }
 }

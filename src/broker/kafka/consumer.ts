@@ -1,3 +1,5 @@
+import { timeStamp } from "console";
+import { Configuration } from "./../../config/Configuration";
 import { ConsumerEvents } from "./../events/ConsumerEvents";
 import { KafkaBrokerConfigOptions } from "./KafkaBrokerConfigOptions";
 import { Kafka, Consumer as KafkaConsumer, Message } from "kafkajs";
@@ -16,8 +18,10 @@ export class Consumer {
       groupId: brokerOptions.groupId,
     });
     this.eventEmitter = new EventEmitter();
+    this.subscribeBuiltInEvents();
   }
 
+  // TODO
   async connect() {
     try {
       await this.consumerInstance.connect();
@@ -33,35 +37,84 @@ export class Consumer {
   }
 
   async subscribe(topic: string) {
-    try {
-      await this.consumerInstance.subscribe({ topic });
-    } catch (error) {
-      this.eventEmitter.emit("CONSUMER_SUBSCRIBE_CHANNEL_FAILED", {
-        instance: this,
-        error,
-        topic,
-      });
-    }
+    await this.consumerInstance.subscribe({ topic });
   }
 
-  async run() {
-    await this.consumerInstance.run({
-      eachMessage: async ({ topic, partition, message }) => {
-        console.log("Message recieved", topic, message);
-        this.eventEmitter.emit(ConsumerEvents.MESSAGE_RECEIVED, {
-          topic,
-          message,
-        });
-      },
+  msgHandler = async ({ topic, partition, message }) => {
+    this.eventEmitter.emit(ConsumerEvents.MESSAGE_RECEIVED, {
+      topic,
+      message,
     });
-  }
+  };
+
+  run = async () => {
+    console.log("started consumer");
+    await this.consumerInstance.run({
+      eachMessage: this.msgHandler,
+    });
+  };
 
   async start() {
     await this.connect();
-    await this.run();
   }
 
-  subscribeEvent(eventName: string, callback) {
-    this.eventEmitter.on(ConsumerEvents.MESSAGE_RECEIVED, callback);
+  subscribeEvent(eventName: ConsumerEvents, callback) {
+    this.eventEmitter.on(eventName, callback);
   }
+
+  subscribeBuiltInEvents() {
+    this.consumerInstance.on("consumer.connect", this.onConnect);
+    this.consumerInstance.on("consumer.disconnect", this.onDisconnect);
+    this.consumerInstance.on("consumer.crash", this.onCrash);
+    this.consumerInstance.on(
+      "consumer.network.request_timeout",
+      this.onRequestTimeout
+    );
+  }
+  /* Why we need event handlers as arrow functions:
+
+    https://www.freecodecamp.org/news/this-is-why-we-need-to-bind-event-handlers-in-class-components-in-react-f7ea1a6f93eb/
+
+  */
+
+  private onConnect = ({ id, type, timestamp }) => {
+    this.eventEmitter.emit(ConsumerEvents.CONNECT, { timestamp });
+  };
+
+  private onDisconnect = ({ id, type, timestamp }) => {
+    this.eventEmitter.emit(ConsumerEvents.DISCONNECT, { timestamp });
+  };
+
+  /*
+  onRequestTimeout : 
+  Payload structure :
+   {  broker, 
+      clientId, 
+      correlationId, 
+      createdAt, 
+      sentAt, 
+      pendingDuration, 
+      apiName, 
+      apiKey, 
+      apiVersion}
+  */
+
+  private onRequestTimeout = ({ id, type, timestamp, payload }) => {
+    this.eventEmitter.emit(ConsumerEvents.REQUEST_TIMEOUT, {
+      payload,
+      timestamp,
+    });
+  };
+
+  /* 
+    onCrash: 
+    Payload Structure :
+    error
+    groupId,
+    restart
+    */
+
+  private onCrash = ({ id, type, timestamp, payload }) => {
+    this.eventEmitter.emit(ConsumerEvents.CRASH, { payload, timestamp });
+  };
 }

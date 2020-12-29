@@ -16,8 +16,6 @@ import { IBroker } from "../IBroker";
 import { EventEmitter } from "events";
 
 export class KafkaBroker implements IBroker {
-  static MESSAGE_RECEIVED = "MESSAGE_RECEIVED";
-
   kafkaInstance: Kafka;
   brokerOptions: KafkaBrokerConfigOptions;
   configuration: Configuration;
@@ -29,38 +27,29 @@ export class KafkaBroker implements IBroker {
   constructor(configuration: Configuration) {
     this.brokerOptions = configuration.brokerConfig() as KafkaBrokerConfigOptions;
     this.configuration = configuration;
+    this.eventEmitter = new EventEmitter();
     this.kafkaInstance = new Kafka(this.fetchConfigOptions());
-  }
-
-  fetchConfigOptions(): KafkaConfig {
-    const configOptions: KafkaConfig = {
-      brokers: this.brokerOptions.brokerAddresses,
-      clientId: this.configuration.clientId(),
-    };
-    return configOptions;
-  }
-
-  initializeProducer(): void {
-    this.producer = new Producer(this.kafkaInstance, this.brokerOptions);
-  }
-
-  initializeConsumer(): void {
-    this.consumer = new Consumer(this.kafkaInstance, this.brokerOptions);
   }
 
   getProducer(): Producer {
     return this.producer;
   }
 
+  getConsumer(): Consumer {
+    return this.consumer;
+  }
+
   initializeBrokerComponents(): void {
     this.initializeProducer();
     this.initializeConsumer();
-    this.initializeEvents();
   }
 
-  async startBrokerComponents() {
+  async startBrokerComponents(channels) {
     await this.producer.start();
     await this.consumer.start();
+    await this.subscribeChannels(channels);
+    await this.consumer.run();
+    await this.initializeEvents();
   }
 
   async sendMessage(options: ProducerMessageStruct): Promise<void> {
@@ -81,26 +70,91 @@ export class KafkaBroker implements IBroker {
     await this.producer.send(params);
   }
 
-  initializeEvents() {
+  subscribeBroker(eventName: string, callback) {
+    this.eventEmitter.on(eventName, callback);
+  }
+
+  private async subscribeChannels(channels: []) {
+    channels.map(async (channel) => await this.consumer.subscribe(channel));
+  }
+
+  /*
+    Private Methods
+  */
+  private fetchConfigOptions(): KafkaConfig {
+    const configOptions: KafkaConfig = {
+      brokers: this.brokerOptions.brokerAddresses,
+      clientId: this.configuration.clientId(),
+    };
+    return configOptions;
+  }
+
+  private initializeProducer(): void {
+    this.producer = new Producer(this.kafkaInstance, this.brokerOptions);
+  }
+
+  private initializeConsumer(): void {
+    this.consumer = new Consumer(this.kafkaInstance, this.brokerOptions);
+  }
+
+  private initializeEvents() {
+    this.builtInEvents();
+    this.customEvents();
+  }
+
+  private subscribeConsumer(eventName: ConsumerEvents, callback) {
+    this.consumer.subscribeEvent(eventName, callback);
+  }
+
+  private customEvents() {
     this.subscribeConsumer(
       ConsumerEvents.MESSAGE_RECEIVED,
       this.messageReceived
     );
   }
 
-  private subscribeConsumer(eventName: string, callback) {
-    this.consumer.subscribeEvent(eventName, callback);
-  }
-
-  messageReceived(topic, message) {
-    this.eventEmitter.emit(
-      ConsumerEvents.MESSAGE_RECEIVED,
-      topic,
-      JSON.parse(message)
+  private builtInEvents() {
+    this.subscribeConsumer(ConsumerEvents.CONNECT, this.onConsumerConnect);
+    this.subscribeConsumer(
+      ConsumerEvents.DISCONNECT,
+      this.onConsumerDisconnect
+    );
+    this.subscribeConsumer(ConsumerEvents.CRASH, this.onCrash);
+    this.subscribeConsumer(
+      ConsumerEvents.REQUEST_TIMEOUT,
+      this.onConsumerRequestTimeout
     );
   }
 
-  subscribeBroker(eventName: string, callback) {
-    this.eventEmitter.on(eventName, callback);
-  }
+  // Event Callbacks
+  // WIP
+
+  messageReceived = async ({ topic, message }) => {
+    this.eventEmitter.emit(
+      ConsumerEvents.MESSAGE_RECEIVED,
+      topic,
+      JSON.parse(message.value)
+    );
+  };
+
+  onConsumerConnect = ({}) => {
+    this.eventEmitter.emit(ConsumerEvents.CONNECT, {});
+  };
+  onConsumerDisconnect = ({}) => {
+    this.eventEmitter.emit(ConsumerEvents.DISCONNECT, {});
+  };
+  onConsumerRequestTimeout = ({ timestamp, payload }) => {
+    this.eventEmitter.emit(ConsumerEvents.REQUEST_TIMEOUT, {
+      payload,
+      timestamp,
+    });
+  };
+
+  onCrash = ({ timestamp, payload }) => {
+    this.eventEmitter.emit(ConsumerEvents.CRASH, { payload, timestamp });
+  };
+
+  onProducerConnect = ({}) => {};
+  onProducerDisconnect = ({}) => {};
+  onProducerRequestTimeout = ({}) => {};
 }

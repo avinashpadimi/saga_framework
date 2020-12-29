@@ -1,3 +1,4 @@
+import { LoggerType, LoggerTypes } from "./../logger/enums/LoggerTypes";
 import { LoggerOptions } from "./../logger/LoggerOptions";
 import {
   LoggerFactory,
@@ -14,9 +15,9 @@ import { MissingLoadConfiguration } from "../error/ConfigurationError/missingLoa
 
 export class Configuration {
   static instance: Configuration;
+  static logger: Logger;
   configurationOptions: ConfigurationOptions;
   broker: BrokerInstance;
-  logger: Logger;
 
   static async loadConfiguration(
     filePath: string,
@@ -70,20 +71,22 @@ export class Configuration {
   }
 
   private async initializeComponents(logOptions: LoggerOptions) {
-    this.initializeLogger(logOptions);
-    this.initializeBroker();
+    await this.initializeLogger(logOptions);
+    await this.initializeBroker();
     await this.startBrokerComponents();
   }
-  private initializeBroker() {
+  private async initializeBroker() {
     this.broker = BrokerFactory.create(this.brokerConfig().brokerType, this);
-    this.broker.initializeBrokerComponents();
+    await this.broker.initializeBrokerComponents();
   }
 
   private initializeLogger(logOptions: LoggerOptions) {
-    this.logger = LoggerFactory.create(logOptions.type, logOptions);
+    Configuration.logger = LoggerFactory.create(logOptions.type, logOptions);
   }
 
   private async startBrokerComponents() {
-    this.broker.startBrokerComponents();
+    await this.broker.startBrokerComponents(
+      this.configurationOptions.subscriberChannels
+    );
   }
 }

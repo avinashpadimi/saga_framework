@@ -9,6 +9,7 @@ export class Consumer {
   eventEmitter: EventEmitter;
 
   private constructor() {
+    this.eventEmitter = new EventEmitter();
     this.initializeEvents();
   }
 
@@ -34,9 +35,9 @@ export class Consumer {
     );
   }
 
-  messageReceived(channel: string, message: MessageStruct) {
-    this.eventEmitter.emit(ConsumerEvents.MESSAGE_RECEIVED, channel, message);
-  }
+  messageReceived = async (channel: string, message: MessageStruct) => {
+    this.eventEmitter.emit(message.sagaName, channel, message);
+  };
 
   subscribe(eventName: string, callback) {
     this.eventEmitter.on(eventName, callback);

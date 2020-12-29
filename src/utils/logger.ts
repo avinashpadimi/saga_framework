@@ -28,11 +28,11 @@ export class Logger {
   private consoleLogger(logOptions: {
     readonly logLevel: LoggerLevel;
   }): pino.Logger {
-    return pino({ level: logOptions.logLevel });
+    return pino({ level: logOptions.logLevel, prettyPrint: true });
   }
   private fileLogger(logOptions): pino.Logger {
     return pino(
-      { level: logOptions.logLevel },
+      { level: logOptions.logLevel, prettyPrint: true },
       fs.createWriteStream(logOptions.filePath)
     );
   }

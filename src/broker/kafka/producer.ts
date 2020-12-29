@@ -20,16 +20,9 @@ export class Producer {
     this.producerInstance = kafkaInstance.producer();
   }
 
+  // TODO  Handle failures
   async connect() {
-    try {
-      await this.producerInstance.connect();
-    } catch (error) {
-      this.eventEmitter.emit("PRODUCER_SERVER_CONNECT_FAILED", {
-        instace: this,
-        error,
-      });
-      process.exit();
-    }
+    await this.producerInstance.connect();
   }
 
   async disconnect() {

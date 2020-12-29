@@ -1,12 +1,12 @@
-{
-  "clientId": "Service B",
-  "brokerConfig": {
-    "groupId": "uuid",
-    "brokerType": "kafka",
-    "brokerAddresses": ["localhost:9092"]
-  },
-  "publisherChannels": [],
-  "subscriberChannels": [],
-  "retryChannels": [],
-  "failureChannel": []
-}
+// {
+//   "clientId": "Service B",
+//   "brokerConfig": {
+//     "groupId": "uuid",
+//     "brokerType": "kafka",
+//     "brokerAddresses": ["localhost:9092"]
+//   },
+//   "publisherChannels": [],
+//   "subscriberChannels": ["saga_channel"],
+//   "retryChannels": [],
+//   "failureChannel": []
+// }

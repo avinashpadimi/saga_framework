@@ -1,5 +1,5 @@
 export enum ProducerEvents {
-  CONNECT = "CONNECT",
-  DISCONNECT = "DISCONNECT",
-  MESSAGE_PUSHED = "MESSAGE_PUSHED",
+  CONNECT = "connect",
+  DISCONNECT = "disconnect",
+  REQUEST_TIMEOUT = "request_timeout",
 }

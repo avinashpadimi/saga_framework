@@ -4,6 +4,9 @@ import { Consumer } from "./consumer/Consumer";
 import { ProducerMessageStruct } from "./payload/producerMessageStruct";
 import { MessageStruct } from "./payload/MessageStruct";
 
+// There should be a dedicated class for each saga.
+// Name of the saga should be unique (Will append uuid to sagaName)
+
 export abstract class AbstractSaga {
   producer: Producer;
   consumer: Consumer;
@@ -14,9 +17,10 @@ export abstract class AbstractSaga {
     this.producer = Producer.getInstance();
     this.consumer = Consumer.getInstance();
     this.sagaName = sagaName;
+    this.eventEmitter = new EventEmitter();
   }
 
-  publishMessage(options: ProducerMessageStruct) {
+  async publishMessage(options: ProducerMessageStruct) {
     this.producer.publish(options);
   }
 
@@ -24,7 +28,7 @@ export abstract class AbstractSaga {
     this.consumer.subscribe(this.sagaName, this.messageReceived);
   }
 
-  messageReceived(channel: string, message: MessageStruct) {
+  messageReceived = async (channel: string, message: MessageStruct) => {
     this.eventEmitter.emit(message.eventType, channel, message);
-  }
+  };
 }

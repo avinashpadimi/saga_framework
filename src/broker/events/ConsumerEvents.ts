@@ -1,5 +1,8 @@
 export enum ConsumerEvents {
-  CONNECT = "CONNECT",
-  DISCONNECT = "DISCONNECT",
-  MESSAGE_RECEIVED = "MESSAGE_RECEIVED",
+  CONNECT = "connect",
+  DISCONNECT = "disconnect",
+  MESSAGE_RECEIVED = "message_received",
+  CRASH = "crash",
+  REQUEST_TIMEOUT = "request_timeout",
+  STOP = "stop",
 }
