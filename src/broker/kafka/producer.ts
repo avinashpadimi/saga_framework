@@ -1,3 +1,4 @@
+import { MessageStruct } from "./../../payload/MessageStruct";
 import { ProducerOptions } from "./parameterOptions/ProducerOptions";
 import { KafkaBrokerConfigOptions } from "./KafkaBrokerConfigOptions";
 import {
@@ -17,7 +18,9 @@ export class Producer {
     this.kafkaInstance = kafkaInstance;
     this.brokerOptions = brokerOptions;
     this.eventEmitter = new EventEmitter();
-    this.producerInstance = kafkaInstance.producer();
+    this.producerInstance = kafkaInstance.producer({
+      transactionalId: "avi1234",
+    });
   }
 
   // TODO  Handle failures
@@ -30,7 +33,13 @@ export class Producer {
   }
 
   async send(producerOptions: ProducerOptions) {
-    await this.producerInstance.send(producerOptions);
+    const transaction = await this.producerInstance.transaction();
+    try {
+      const info = await transaction
+        .send(producerOptions)
+        .catch((e) => console.log("--error is", e));
+      await transaction.abort();
+    } catch (error) {}
   }
 
   async start() {

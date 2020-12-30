@@ -18,10 +18,12 @@ export async function loadConfiguration(
     | Error = await Configuration.loadConfiguration(filePath, logOptions);
 
   if (configuration instanceof Error) {
-    console.log("---configurations instance is", configuration);
+    Configuration.logger.info(
+      `Error Configuration Information ${configuration}`
+    );
   }
-
-  Configuration.logger.debug("instance got crated");
+  Configuration.logger.debug(`Configuration Information ${configuration}`);
+  Configuration.logger.debug("Configuration got created successfully");
   return configuration;
 }
 

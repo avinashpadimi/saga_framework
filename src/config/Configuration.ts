@@ -77,6 +77,7 @@ export class Configuration {
   }
   private async initializeBroker() {
     this.broker = BrokerFactory.create(this.brokerConfig().brokerType, this);
+    Configuration.logger.info("Initializing Broker Components");
     await this.broker.initializeBrokerComponents();
   }
 

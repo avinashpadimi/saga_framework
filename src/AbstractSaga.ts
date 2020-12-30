@@ -28,7 +28,7 @@ export abstract class AbstractSaga {
     this.consumer.subscribe(this.sagaName, this.messageReceived);
   }
 
-  messageReceived = async (channel: string, message: MessageStruct) => {
-    this.eventEmitter.emit(message.eventType, channel, message);
+  messageReceived = async (channel: string, info: MessageStruct) => {
+    this.eventEmitter.emit(info.eventType, channel, info);
   };
 }

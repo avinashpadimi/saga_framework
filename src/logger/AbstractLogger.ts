@@ -3,6 +3,7 @@ import { LoggerType } from "./enums/LoggerTypes";
 import { LoggerOptions } from "./LoggerOptions";
 import { LoggerLevel, LogLevel } from "./enums/LogLevel";
 import { Logger as ExternalLogger } from "../utils/logger";
+import { logLevel } from "kafkajs";
 
 export abstract class Logger {
   protected LOGGERCALLBACK = "LOGGERCALLBACK";
@@ -61,8 +62,15 @@ export abstract class Logger {
   ): void;
 
   private log(logLevel: LoggerLevel, message: string) {
+    if (!this.isValidLogLevel(logLevel)) {
+      return;
+    }
     const msg: string = this.formatLog(logLevel, message);
     this.triggerCallbackEvents(this, logLevel, msg);
+  }
+
+  private isValidLogLevel(logLevel: LoggerLevel) {
+    return this.logOptions.logLevel === logLevel;
   }
 
   protected formatLog(logLevel: LoggerLevel, message: string): string {

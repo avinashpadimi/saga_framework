@@ -12,6 +12,6 @@ export class FileLogger extends Logger {
     logLevel: LoggerLevel,
     message: string
   ) {
-    this.extLogger.push(logLevel, message);
+    instance.extLogger.push(logLevel, message);
   }
 }

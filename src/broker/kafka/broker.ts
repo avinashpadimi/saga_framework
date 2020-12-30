@@ -11,15 +11,20 @@ import {
   Message,
   CompressionTypes,
   IHeaders,
+  logLevel,
 } from "kafkajs";
 import { IBroker } from "../IBroker";
 import { EventEmitter } from "events";
+import { BrokerConnectionError } from "../../error/ConnectionError/BrokerConnectionError";
+import { BrokerDisconnectedError } from "../../error/ConnectionError/BrokerDisconnectedError";
 
 export class KafkaBroker implements IBroker {
   kafkaInstance: Kafka;
   brokerOptions: KafkaBrokerConfigOptions;
   configuration: Configuration;
   eventEmitter: EventEmitter;
+  brokerAlive: boolean;
+  errorPayload: any;
 
   private producer: Producer;
   private consumer: Consumer;
@@ -50,14 +55,19 @@ export class KafkaBroker implements IBroker {
     await this.subscribeChannels(channels);
     await this.consumer.run();
     await this.initializeEvents();
+    this.brokerAlive = true;
   }
 
   async sendMessage(options: ProducerMessageStruct): Promise<void> {
+    if (!this.alive()) {
+      throw new BrokerConnectionError(this.errorPayload.error);
+    }
     const params: ProducerOptions = {
       topic: options.channel,
       acks: options.additionalParameters.acks,
       timeout: options.additionalParameters.timeout,
       messages: [],
+      compression: CompressionTypes.GZIP,
     };
 
     params.messages = [
@@ -74,22 +84,35 @@ export class KafkaBroker implements IBroker {
     this.eventEmitter.on(eventName, callback);
   }
 
-  private async subscribeChannels(channels: []) {
-    channels.map(async (channel) => await this.consumer.subscribe(channel));
+  alive(): boolean {
+    return this.brokerAlive;
   }
 
   /*
     Private Methods
   */
+
+  private async subscribeChannels(channels: []) {
+    channels.map(async (channel) => await this.consumer.subscribe(channel));
+  }
+
   private fetchConfigOptions(): KafkaConfig {
     const configOptions: KafkaConfig = {
       brokers: this.brokerOptions.brokerAddresses,
       clientId: this.configuration.clientId(),
+      logLevel: logLevel.ERROR,
+      retry: {
+        initialRetryTime: this.brokerOptions.initialRetryTime || 300,
+        retries: this.brokerOptions.noOfRetries || 3,
+        multiplier: this.brokerOptions.multiplier || 2,
+        maxRetryTime: this.brokerOptions.maxRetryTime || 10000,
+      },
     };
     return configOptions;
   }
 
   private initializeProducer(): void {
+    Configuration.logger.info("Initializing Producer Components");
     this.producer = new Producer(this.kafkaInstance, this.brokerOptions);
   }
 
@@ -126,8 +149,20 @@ export class KafkaBroker implements IBroker {
     );
   }
 
+  private setBrokerStatus(status, error) {
+    this.brokerAlive = status;
+    this.errorPayload = error;
+  }
+
   // Event Callbacks
   // WIP
+
+  // Arrow Functions
+  /* Why we need event handlers as arrow functions:
+
+    https://www.freecodecamp.org/news/this-is-why-we-need-to-bind-event-handlers-in-class-components-in-react-f7ea1a6f93eb/
+
+  */
 
   messageReceived = async ({ topic, message }) => {
     this.eventEmitter.emit(
@@ -138,9 +173,11 @@ export class KafkaBroker implements IBroker {
   };
 
   onConsumerConnect = ({}) => {
+    this.setBrokerStatus(true, null);
     this.eventEmitter.emit(ConsumerEvents.CONNECT, {});
   };
   onConsumerDisconnect = ({}) => {
+    this.setBrokerStatus(false, new BrokerDisconnectedError());
     this.eventEmitter.emit(ConsumerEvents.DISCONNECT, {});
   };
   onConsumerRequestTimeout = ({ timestamp, payload }) => {
@@ -151,6 +188,7 @@ export class KafkaBroker implements IBroker {
   };
 
   onCrash = ({ timestamp, payload }) => {
+    this.setBrokerStatus(false, payload);
     this.eventEmitter.emit(ConsumerEvents.CRASH, { payload, timestamp });
   };
 

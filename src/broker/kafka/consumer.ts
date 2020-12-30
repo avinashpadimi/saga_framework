@@ -23,17 +23,7 @@ export class Consumer {
 
   // TODO
   async connect() {
-    try {
-      await this.consumerInstance.connect();
-    } catch (error) {
-      // In case we are not able to connect to server.
-      // Emit an event
-      this.eventEmitter.emit("CONSUMER_SERVER_CONNECT_FAILED", {
-        instace: this,
-        error,
-      });
-      process.exit();
-    }
+    await this.consumerInstance.connect();
   }
 
   async subscribe(topic: string) {
@@ -48,7 +38,6 @@ export class Consumer {
   };
 
   run = async () => {
-    console.log("started consumer");
     await this.consumerInstance.run({
       eachMessage: this.msgHandler,
     });
